@@ -1,0 +1,25 @@
+[package]
+name = "capnp-sync"
+version = "0.1.0"
+edition = "2024"
+description = "Cap'n Proto sync toolkit: backend-side SyncService server (action pool + records) and a central distributor client."
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[dependencies]
+log = "0.4"
+thiserror = "2.0.18"
+ntex = { version = "=3.10.1", features = ["compio"] }
+compio-io = { version = "0.9", features = ["compat"] }
+compio-net = "0.11"
+futures = "0.3"
+capnp = "0.26"
+capnp-rpc = "0.26"
+
+[build-dependencies]
+capnpc = "0.26"
