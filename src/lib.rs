@@ -20,5 +20,5 @@ pub mod server;
 mod transport;
 
 pub use error::Error;
-pub use ops::{Operation, SyncOperations, Team, Window};
+pub use ops::{Credit, Operation, SyncOperations, Team, Window};
 pub use capnp;

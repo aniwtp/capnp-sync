@@ -8,10 +8,20 @@ struct Team {
   banner @4 :Data;
 }
 
+struct Credit {
+  id @0 :UInt64;
+  name @1 :Text;
+  altNames @2 :List(Text);
+  avatar @3 :Data;
+  banner @4 :Data;
+}
+
 struct Operation {
   union {
     editTeam @0 :Team;
     delTeam @1 :UInt64;
+    editCredit @2 :Credit;
+    delCredit @3 :UInt64;
   }
 }
 
@@ -26,6 +36,7 @@ struct Result {
 
 enum IdsTable {
   team @0;
+  credits @1;
 }
 
 struct IdsPayload {

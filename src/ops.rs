@@ -17,9 +17,20 @@ pub struct Team {
 }
 
 #[derive(Debug, Clone)]
+pub struct Credit {
+    pub id: u64,
+    pub name: String,
+    pub alt_names: Vec<String>,
+    pub avatar: Vec<u8>,
+    pub banner: Vec<u8>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Operation {
     EditTeam(Team),
     DelTeam(u64),
+    EditCredit(Credit),
+    DelCredit(u64),
 }
 
 #[derive(Debug, Clone, Default)]
@@ -63,6 +74,20 @@ pub fn fill_operations(builder: sync_operations::Builder<'_>, ops: &[Operation])
             Operation::DelTeam(id) => {
                 item.set_del_team(*id);
             }
+            Operation::EditCredit(credit) => {
+                let mut c = item.init_edit_credit();
+                c.set_id(credit.id);
+                c.set_name(credit.name.as_str());
+                let mut alt = c.reborrow().init_alt_names(credit.alt_names.len() as u32);
+                for (j, name) in credit.alt_names.iter().enumerate() {
+                    alt.set(j as u32, name.as_str());
+                }
+                c.set_avatar(&credit.avatar);
+                c.set_banner(&credit.banner);
+            }
+            Operation::DelCredit(id) => {
+                item.set_del_credit(*id);
+            }
         }
     }
 }
@@ -88,6 +113,23 @@ pub fn parse_operations(so: sync_operations::Reader<'_>) -> Result<SyncOperation
             }
             Which::DelTeam(id) => {
                 operations.push(Operation::DelTeam(id));
+            }
+            Which::EditCredit(v) => {
+                let v = v?;
+                let mut alt_names = Vec::new();
+                for name in v.get_alt_names()? {
+                    alt_names.push(name?.to_str()?.to_owned());
+                }
+                operations.push(Operation::EditCredit(Credit {
+                    id: v.get_id(),
+                    name: v.get_name()?.to_str()?.to_owned(),
+                    alt_names,
+                    avatar: v.get_avatar()?.to_vec(),
+                    banner: v.get_banner()?.to_vec(),
+                }));
+            }
+            Which::DelCredit(id) => {
+                operations.push(Operation::DelCredit(id));
             }
         }
     }

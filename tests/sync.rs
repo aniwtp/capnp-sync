@@ -99,6 +99,15 @@ impl Records for MemRecords {
                 Operation::DelTeam(id) => {
                     records.retain(|(_, o)| !matches!(o, Operation::EditTeam(t) if t.id == *id));
                 }
+                Operation::EditCredit(credit) => {
+                    records
+                        .retain(|(_, o)| !matches!(o, Operation::EditCredit(c) if c.id == credit.id));
+                    let seq = records.last().map(|(s, _)| s + 1).unwrap_or(0);
+                    records.push((seq, Operation::EditCredit(credit.clone())));
+                }
+                Operation::DelCredit(id) => {
+                    records.retain(|(_, o)| !matches!(o, Operation::EditCredit(c) if c.id == *id));
+                }
             }
         }
         Ok(())
