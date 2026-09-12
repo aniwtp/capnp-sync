@@ -16,12 +16,28 @@ struct Credit {
   banner @4 :Data;
 }
 
+struct Title {
+  id @0 :UInt64;
+  name @1 :Text;
+  altNames @2 :List(Text);
+  teams @3 :List(UInt64);
+}
+
+struct User {
+  id @0 :UInt64;
+  name @1 :Text;
+}
+
 struct Operation {
   union {
     editTeam @0 :Team;
     delTeam @1 :UInt64;
     editCredit @2 :Credit;
     delCredit @3 :UInt64;
+    editTitle @4 :Title;
+    delTitle @5 :UInt64;
+    editUser @6 :User;
+    delUser @7 :UInt64;
   }
 }
 
@@ -37,6 +53,8 @@ struct Result {
 enum IdsTable {
   team @0;
   credits @1;
+  titles @2;
+  users @3;
 }
 
 struct IdsPayload {

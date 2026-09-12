@@ -108,6 +108,7 @@ impl Records for MemRecords {
                 Operation::DelCredit(id) => {
                     records.retain(|(_, o)| !matches!(o, Operation::EditCredit(c) if c.id == *id));
                 }
+                _ => {}
             }
         }
         Ok(())

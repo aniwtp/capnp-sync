@@ -26,11 +26,29 @@ pub struct Credit {
 }
 
 #[derive(Debug, Clone)]
+pub struct Title {
+    pub id: u64,
+    pub name: String,
+    pub alt_names: Vec<String>,
+    pub teams: Vec<u64>,
+}
+
+#[derive(Debug, Clone)]
+pub struct User {
+    pub id: u64,
+    pub name: String,
+}
+
+#[derive(Debug, Clone)]
 pub enum Operation {
     EditTeam(Team),
     DelTeam(u64),
     EditCredit(Credit),
     DelCredit(u64),
+    EditTitle(Title),
+    DelTitle(u64),
+    EditUser(User),
+    DelUser(u64),
 }
 
 #[derive(Debug, Clone, Default)]
@@ -83,10 +101,33 @@ pub fn fill_operations(builder: sync_operations::Builder<'_>, ops: &[Operation])
                     alt.set(j as u32, name.as_str());
                 }
                 c.set_avatar(&credit.avatar);
-                c.set_banner(&credit.banner);
             }
             Operation::DelCredit(id) => {
                 item.set_del_credit(*id);
+            }
+            Operation::EditTitle(title) => {
+                let mut t = item.init_edit_title();
+                t.set_id(title.id);
+                t.set_name(title.name.as_str());
+                let mut alt = t.reborrow().init_alt_names(title.alt_names.len() as u32);
+                for (j, name) in title.alt_names.iter().enumerate() {
+                    alt.set(j as u32, name.as_str());
+                }
+                let mut teams = t.reborrow().init_teams(title.teams.len() as u32);
+                for (j, team) in title.teams.iter().enumerate() {
+                    teams.set(j as u32, *team);
+                }
+            }
+            Operation::DelTitle(id) => {
+                item.set_del_title(*id);
+            }
+            Operation::EditUser(user) => {
+                let mut u = item.init_edit_user();
+                u.set_id(user.id);
+                u.set_name(user.name.as_str());
+            }
+            Operation::DelUser(id) => {
+                item.set_del_user(*id);
             }
         }
     }
@@ -130,6 +171,36 @@ pub fn parse_operations(so: sync_operations::Reader<'_>) -> Result<SyncOperation
             }
             Which::DelCredit(id) => {
                 operations.push(Operation::DelCredit(id));
+            }
+            Which::EditTitle(v) => {
+                let v = v?;
+                let mut alt_names = Vec::new();
+                for name in v.get_alt_names()? {
+                    alt_names.push(name?.to_str()?.to_owned());
+                }
+                let mut teams = Vec::new();
+                for team in v.get_teams()? {
+                    teams.push(team);
+                }
+                operations.push(Operation::EditTitle(Title {
+                    id: v.get_id(),
+                    name: v.get_name()?.to_str()?.to_owned(),
+                    alt_names,
+                    teams,
+                }));
+            }
+            Which::DelTitle(id) => {
+                operations.push(Operation::DelTitle(id));
+            }
+            Which::EditUser(v) => {
+                let v = v?;
+                operations.push(Operation::EditUser(User {
+                    id: v.get_id(),
+                    name: v.get_name()?.to_str()?.to_owned(),
+                }));
+            }
+            Which::DelUser(id) => {
+                operations.push(Operation::DelUser(id));
             }
         }
     }
