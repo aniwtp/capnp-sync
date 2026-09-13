@@ -22,10 +22,12 @@ struct Title {
   altNames @2 :List(Text);
   teams @3 :List(UInt64);
   avatar @4 :Data;
-  banner @5 :Data;
-  typeComics @6 :UInt8;
-  statusRelease @7 :UInt8;
-  statusTranslate @8 :UInt8;
+  coverHash @5 :Data;
+  banner @6 :Data;
+  bannerHash @7 :Data;
+  typeComics @8 :UInt8;
+  statusRelease @9 :UInt8;
+  statusTranslate @10 :UInt8;
 }
 
 struct User {

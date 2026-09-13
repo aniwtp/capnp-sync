@@ -32,7 +32,9 @@ pub struct Title {
     pub alt_names: Vec<String>,
     pub teams: Vec<u64>,
     pub avatar: Vec<u8>,
+    pub cover_hash: Vec<u8>,
     pub banner: Vec<u8>,
+    pub banner_hash: Vec<u8>,
     pub type_comics: u8,
     pub status_release: u8,
     pub status_translate: u8,
@@ -123,7 +125,9 @@ pub fn fill_operations(builder: sync_operations::Builder<'_>, ops: &[Operation])
                     teams.set(j as u32, *team);
                 }
                 t.set_avatar(&title.avatar);
+                t.set_cover_hash(&title.cover_hash);
                 t.set_banner(&title.banner);
+                t.set_banner_hash(&title.banner_hash);
                 t.set_type_comics(title.type_comics);
                 t.set_status_release(title.status_release);
                 t.set_status_translate(title.status_translate);
@@ -198,7 +202,9 @@ pub fn parse_operations(so: sync_operations::Reader<'_>) -> Result<SyncOperation
                     alt_names,
                     teams,
                     avatar: v.get_avatar()?.to_vec(),
+                    cover_hash: v.get_cover_hash()?.to_vec(),
                     banner: v.get_banner()?.to_vec(),
+                    banner_hash: v.get_banner_hash()?.to_vec(),
                     type_comics: v.get_type_comics(),
                     status_release: v.get_status_release(),
                     status_translate: v.get_status_translate(),
