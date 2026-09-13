@@ -31,6 +31,11 @@ pub struct Title {
     pub name: String,
     pub alt_names: Vec<String>,
     pub teams: Vec<u64>,
+    pub avatar: Vec<u8>,
+    pub banner: Vec<u8>,
+    pub type_comics: u8,
+    pub status_release: u8,
+    pub status_translate: u8,
 }
 
 #[derive(Debug, Clone)]
@@ -117,6 +122,11 @@ pub fn fill_operations(builder: sync_operations::Builder<'_>, ops: &[Operation])
                 for (j, team) in title.teams.iter().enumerate() {
                     teams.set(j as u32, *team);
                 }
+                t.set_avatar(&title.avatar);
+                t.set_banner(&title.banner);
+                t.set_type_comics(title.type_comics);
+                t.set_status_release(title.status_release);
+                t.set_status_translate(title.status_translate);
             }
             Operation::DelTitle(id) => {
                 item.set_del_title(*id);
@@ -187,6 +197,11 @@ pub fn parse_operations(so: sync_operations::Reader<'_>) -> Result<SyncOperation
                     name: v.get_name()?.to_str()?.to_owned(),
                     alt_names,
                     teams,
+                    avatar: v.get_avatar()?.to_vec(),
+                    banner: v.get_banner()?.to_vec(),
+                    type_comics: v.get_type_comics(),
+                    status_release: v.get_status_release(),
+                    status_translate: v.get_status_translate(),
                 }));
             }
             Which::DelTitle(id) => {
