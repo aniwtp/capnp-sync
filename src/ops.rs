@@ -14,6 +14,10 @@ pub struct Team {
     pub alt_names: Vec<String>,
     pub avatar: Vec<u8>,
     pub banner: Vec<u8>,
+    /// Placeholder-палитра аватарки (27 байт; пусто — нет).
+    pub avatar_hash: Vec<u8>,
+    /// Placeholder-палитра баннера (27 байт; пусто — нет).
+    pub banner_hash: Vec<u8>,
 }
 
 #[derive(Debug, Clone)]
@@ -44,6 +48,10 @@ pub struct Title {
 pub struct User {
     pub id: u64,
     pub name: String,
+    /// Токен аватарки (nanoid, 12 байт; пусто — нет).
+    pub avatar: Vec<u8>,
+    /// Placeholder аватарки (16 байт; пусто — нет).
+    pub avatar_hash: Vec<u8>,
 }
 
 #[derive(Debug, Clone)]
@@ -95,6 +103,8 @@ pub fn fill_operations(builder: sync_operations::Builder<'_>, ops: &[Operation])
                 }
                 t.set_avatar(&team.avatar);
                 t.set_banner(&team.banner);
+                t.set_avatar_hash(&team.avatar_hash);
+                t.set_banner_hash(&team.banner_hash);
             }
             Operation::DelTeam(id) => {
                 item.set_del_team(*id);
@@ -139,6 +149,8 @@ pub fn fill_operations(builder: sync_operations::Builder<'_>, ops: &[Operation])
                 let mut u = item.init_edit_user();
                 u.set_id(user.id);
                 u.set_name(user.name.as_str());
+                u.set_avatar(&user.avatar);
+                u.set_avatar_hash(&user.avatar_hash);
             }
             Operation::DelUser(id) => {
                 item.set_del_user(*id);
@@ -164,6 +176,8 @@ pub fn parse_operations(so: sync_operations::Reader<'_>) -> Result<SyncOperation
                     alt_names,
                     avatar: v.get_avatar()?.to_vec(),
                     banner: v.get_banner()?.to_vec(),
+                    avatar_hash: v.get_avatar_hash()?.to_vec(),
+                    banner_hash: v.get_banner_hash()?.to_vec(),
                 }));
             }
             Which::DelTeam(id) => {
@@ -218,6 +232,8 @@ pub fn parse_operations(so: sync_operations::Reader<'_>) -> Result<SyncOperation
                 operations.push(Operation::EditUser(User {
                     id: v.get_id(),
                     name: v.get_name()?.to_str()?.to_owned(),
+                    avatar: v.get_avatar()?.to_vec(),
+                    avatar_hash: v.get_avatar_hash()?.to_vec(),
                 }));
             }
             Which::DelUser(id) => {

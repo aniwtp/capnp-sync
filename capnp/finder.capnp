@@ -6,6 +6,9 @@ struct Team {
   altNames @2 :List(Text);
   avatar @3 :Data;
   banner @4 :Data;
+  # Placeholder-палитры картинок (27 байт; пусто — нет): карточки команд в поиске.
+  avatarHash @5 :Data;
+  bannerHash @6 :Data;
 }
 
 struct Credit {
@@ -33,6 +36,9 @@ struct Title {
 struct User {
   id @0 :UInt64;
   name @1 :Text;
+  # Токен аватарки (nanoid, 12 байт; пусто — нет) и placeholder (16 байт; пусто — нет).
+  avatar @2 :Data;
+  avatarHash @3 :Data;
 }
 
 struct Operation {
