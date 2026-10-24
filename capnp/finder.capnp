@@ -17,6 +17,11 @@ struct Credit {
   altNames @2 :List(Text);
   avatar @3 :Data;
   banner @4 :Data;
+  # Placeholder-палитры картинок (27 байт; пусто — нет): карточки персон в поиске.
+  avatarHash @5 :Data;
+  bannerHash @6 :Data;
+  # Вид записи, значения enum CreditType credits: 1 — человек, 2 — издатель (0 — не задан).
+  kind @7 :UInt8;
 }
 
 struct Title {

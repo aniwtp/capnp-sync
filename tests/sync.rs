@@ -428,7 +428,7 @@ fn connections_closed_after_use() {
 #[test]
 fn image_fields_roundtrip_through_capnp() {
     use capnp_sync::finder_capnp::sync_operations;
-    use capnp_sync::ops::{fill_operations, parse_operations, User};
+    use capnp_sync::ops::{fill_operations, parse_operations, Credit, User};
 
     let ops = vec![
         Operation::EditTeam(Team {
@@ -446,6 +446,16 @@ fn image_fields_roundtrip_through_capnp() {
             avatar: b"useravatar12".to_vec(),
             avatar_hash: vec![4; 16],
         }),
+        Operation::EditCredit(Credit {
+            id: 8,
+            name: "Kishimoto".to_owned(),
+            alt_names: vec!["Масаси".to_owned()],
+            avatar: b"credavatar12".to_vec(),
+            banner: b"credbanner12".to_vec(),
+            avatar_hash: vec![1; 27],
+            banner_hash: vec![2; 27],
+            kind: 2,
+        }),
     ];
     let mut message = capnp::message::Builder::new_default();
     fill_operations(message.init_root::<sync_operations::Builder>(), &ops);
@@ -460,6 +470,15 @@ fn image_fields_roundtrip_through_capnp() {
     match &parsed.operations[1] {
         Operation::EditUser(u) => {
             assert_eq!((u.avatar.as_slice(), u.avatar_hash.as_slice()), (&b"useravatar12"[..], &[4u8; 16][..]));
+        }
+        other => panic!("unexpected {other:?}"),
+    }
+    match &parsed.operations[2] {
+        Operation::EditCredit(c) => {
+            assert_eq!((c.avatar.as_slice(), c.avatar_hash.as_slice()), (&b"credavatar12"[..], &[1u8; 27][..]));
+            assert_eq!((c.banner.as_slice(), c.banner_hash.as_slice()), (&b"credbanner12"[..], &[2u8; 27][..]));
+            assert_eq!(c.kind, 2);
+            assert_eq!(c.alt_names, vec!["Масаси".to_owned()]);
         }
         other => panic!("unexpected {other:?}"),
     }

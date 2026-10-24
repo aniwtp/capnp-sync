@@ -27,6 +27,12 @@ pub struct Credit {
     pub alt_names: Vec<String>,
     pub avatar: Vec<u8>,
     pub banner: Vec<u8>,
+    /// Placeholder-палитра аватарки (27 байт; пусто — нет).
+    pub avatar_hash: Vec<u8>,
+    /// Placeholder-палитра баннера (27 байт; пусто — нет).
+    pub banner_hash: Vec<u8>,
+    /// Вид записи — значение `CreditType` credits: 1 — человек, 2 — издатель.
+    pub kind: u8,
 }
 
 #[derive(Debug, Clone)]
@@ -118,6 +124,10 @@ pub fn fill_operations(builder: sync_operations::Builder<'_>, ops: &[Operation])
                     alt.set(j as u32, name.as_str());
                 }
                 c.set_avatar(&credit.avatar);
+                c.set_banner(&credit.banner);
+                c.set_avatar_hash(&credit.avatar_hash);
+                c.set_banner_hash(&credit.banner_hash);
+                c.set_kind(credit.kind);
             }
             Operation::DelCredit(id) => {
                 item.set_del_credit(*id);
@@ -195,6 +205,9 @@ pub fn parse_operations(so: sync_operations::Reader<'_>) -> Result<SyncOperation
                     alt_names,
                     avatar: v.get_avatar()?.to_vec(),
                     banner: v.get_banner()?.to_vec(),
+                    avatar_hash: v.get_avatar_hash()?.to_vec(),
+                    banner_hash: v.get_banner_hash()?.to_vec(),
+                    kind: v.get_kind(),
                 }));
             }
             Which::DelCredit(id) => {
