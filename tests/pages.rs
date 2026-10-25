@@ -99,12 +99,21 @@ fn upload_claim_release_roundtrip() {
             .unwrap();
         assert_eq!(err, Err(PageError::BadTokens(vec!["nope".into()])));
         assert_eq!(
-            client.claim(std::slice::from_ref(&a.token), 6).await.unwrap(),
+            client
+                .claim(std::slice::from_ref(&a.token), 6)
+                .await
+                .unwrap(),
             Err(PageError::BadTokens(vec![a.token.clone()]))
         );
         assert!(!mem.0.lock().unwrap()[&a.token].1);
 
-        assert_eq!(client.claim(std::slice::from_ref(&a.token), 5).await.unwrap(), Ok(()));
+        assert_eq!(
+            client
+                .claim(std::slice::from_ref(&a.token), 5)
+                .await
+                .unwrap(),
+            Ok(())
+        );
         assert_eq!(
             client
                 .release(&[b.token.clone(), "nope".into()], 5)

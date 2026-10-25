@@ -23,6 +23,8 @@ pub struct PageUpload {
     pub user_id: u64,
     pub team_id: u64,
     pub title_id: u32,
+    /// Часть страницы вебтуна (свои пределы габаритов), иначе страница манги.
+    pub web: bool,
 }
 
 /// Залитая страница: ключ объекта, плейсхолдер и габариты.
@@ -115,6 +117,7 @@ impl page_store::Server for Handler {
             user_id: p.get_user_id(),
             team_id: p.get_team_id(),
             title_id: p.get_title_id(),
+            web: p.get_web(),
         };
         let backend = self.0.clone();
         let res = blocking(move || backend.upload(page)).await;
@@ -289,6 +292,7 @@ impl PagesClient {
             p.set_user_id(page.user_id);
             p.set_team_id(page.team_id);
             p.set_title_id(page.title_id);
+            p.set_web(page.web);
         }
         let resp = call_with_timeout("upload", self.timeout, req.send().promise).await?;
         let r = resp.get()?.get_result()?;

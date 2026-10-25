@@ -8,6 +8,7 @@ struct PageUpload {
   userId @1 :UInt64;
   teamId @2 :UInt64;    # 0 — админская сессия
   titleId @3 :UInt32;
+  web @4 :Bool;         # часть страницы вебтуна (ширина ≤ 1000, высота ≤ доли ширины), иначе страница манги (≤ 3000×4000)
 }
 
 struct PageStored {

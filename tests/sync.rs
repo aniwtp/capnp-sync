@@ -100,8 +100,9 @@ impl Records for MemRecords {
                     records.retain(|(_, o)| !matches!(o, Operation::EditTeam(t) if t.id == *id));
                 }
                 Operation::EditCredit(credit) => {
-                    records
-                        .retain(|(_, o)| !matches!(o, Operation::EditCredit(c) if c.id == credit.id));
+                    records.retain(
+                        |(_, o)| !matches!(o, Operation::EditCredit(c) if c.id == credit.id),
+                    );
                     let seq = records.last().map(|(s, _)| s + 1).unwrap_or(0);
                     records.push((seq, Operation::EditCredit(credit.clone())));
                 }
@@ -428,7 +429,7 @@ fn connections_closed_after_use() {
 #[test]
 fn image_fields_roundtrip_through_capnp() {
     use capnp_sync::finder_capnp::sync_operations;
-    use capnp_sync::ops::{fill_operations, parse_operations, Credit, User};
+    use capnp_sync::ops::{Credit, User, fill_operations, parse_operations};
 
     let ops = vec![
         Operation::EditTeam(Team {
@@ -459,24 +460,44 @@ fn image_fields_roundtrip_through_capnp() {
     ];
     let mut message = capnp::message::Builder::new_default();
     fill_operations(message.init_root::<sync_operations::Builder>(), &ops);
-    let parsed = parse_operations(message.get_root_as_reader::<sync_operations::Reader>().unwrap()).unwrap();
+    let parsed = parse_operations(
+        message
+            .get_root_as_reader::<sync_operations::Reader>()
+            .unwrap(),
+    )
+    .unwrap();
     match &parsed.operations[0] {
         Operation::EditTeam(t) => {
-            assert_eq!((t.avatar.as_slice(), t.avatar_hash.as_slice()), (&b"avatar123456"[..], &[7u8; 27][..]));
-            assert_eq!((t.banner.as_slice(), t.banner_hash.as_slice()), (&b"banner123456"[..], &[9u8; 27][..]));
+            assert_eq!(
+                (t.avatar.as_slice(), t.avatar_hash.as_slice()),
+                (&b"avatar123456"[..], &[7u8; 27][..])
+            );
+            assert_eq!(
+                (t.banner.as_slice(), t.banner_hash.as_slice()),
+                (&b"banner123456"[..], &[9u8; 27][..])
+            );
         }
         other => panic!("unexpected {other:?}"),
     }
     match &parsed.operations[1] {
         Operation::EditUser(u) => {
-            assert_eq!((u.avatar.as_slice(), u.avatar_hash.as_slice()), (&b"useravatar12"[..], &[4u8; 16][..]));
+            assert_eq!(
+                (u.avatar.as_slice(), u.avatar_hash.as_slice()),
+                (&b"useravatar12"[..], &[4u8; 16][..])
+            );
         }
         other => panic!("unexpected {other:?}"),
     }
     match &parsed.operations[2] {
         Operation::EditCredit(c) => {
-            assert_eq!((c.avatar.as_slice(), c.avatar_hash.as_slice()), (&b"credavatar12"[..], &[1u8; 27][..]));
-            assert_eq!((c.banner.as_slice(), c.banner_hash.as_slice()), (&b"credbanner12"[..], &[2u8; 27][..]));
+            assert_eq!(
+                (c.avatar.as_slice(), c.avatar_hash.as_slice()),
+                (&b"credavatar12"[..], &[1u8; 27][..])
+            );
+            assert_eq!(
+                (c.banner.as_slice(), c.banner_hash.as_slice()),
+                (&b"credbanner12"[..], &[2u8; 27][..])
+            );
             assert_eq!(c.kind, 2);
             assert_eq!(c.alt_names, vec!["Масаси".to_owned()]);
         }
