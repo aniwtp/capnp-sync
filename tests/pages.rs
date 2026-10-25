@@ -81,6 +81,7 @@ fn upload_claim_release_roundtrip() {
             user_id: 1,
             team_id: 5,
             title_id: 9,
+            web: byte == 0xFF,
         };
 
         // большая страница доходит целиком
