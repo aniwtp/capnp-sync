@@ -8,9 +8,18 @@ use capnp_sync::pages::{PageBackend, PageError, PageUpload, PagesClient, StoredP
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 
-/// token → (team, done, released)
+/// Запись страницы в памяти.
+#[derive(Clone)]
+struct Entry {
+    team: u64,
+    done: bool,
+    released: bool,
+    mini: Vec<u8>,
+}
+
+/// token → запись
 #[derive(Default)]
-struct Mem(Mutex<HashMap<String, (u64, bool, bool)>>);
+struct Mem(Mutex<HashMap<String, Entry>>);
 
 impl PageBackend for Mem {
     fn upload(&self, page: PageUpload) -> Result<StoredPage, PageError> {
@@ -19,7 +28,15 @@ impl PageBackend for Mem {
         }
         let mut m = self.0.lock().unwrap();
         let token = format!("tok{:09}", m.len());
-        m.insert(token.clone(), (page.team_id, false, false));
+        m.insert(
+            token.clone(),
+            Entry {
+                team: page.team_id,
+                done: false,
+                released: false,
+                mini: page.mini,
+            },
+        );
         Ok(StoredPage {
             token,
             hash: vec![7; 16],
@@ -32,14 +49,14 @@ impl PageBackend for Mem {
         let mut m = self.0.lock().unwrap();
         let bad: Vec<String> = tokens
             .iter()
-            .filter(|t| m.get(*t).is_none_or(|e| e.0 != team_id || e.2))
+            .filter(|t| m.get(*t).is_none_or(|e| e.team != team_id || e.released))
             .cloned()
             .collect();
         if !bad.is_empty() {
             return Err(PageError::BadTokens(bad));
         }
         for t in tokens {
-            m.get_mut(t).unwrap().1 = true;
+            m.get_mut(t).unwrap().done = true;
         }
         Ok(())
     }
@@ -47,8 +64,8 @@ impl PageBackend for Mem {
     fn release(&self, tokens: &[String], team_id: u64) -> Result<(), PageError> {
         let mut m = self.0.lock().unwrap();
         for t in tokens {
-            if let Some(e) = m.get_mut(t).filter(|e| e.0 == team_id) {
-                e.2 = true;
+            if let Some(e) = m.get_mut(t).filter(|e| e.team == team_id) {
+                e.released = true;
             }
         }
         Ok(())
@@ -82,11 +99,17 @@ fn upload_claim_release_roundtrip() {
             team_id: 5,
             title_id: 9,
             web: byte == 0xFF,
+            mini: if byte == 0xFF {
+                vec![1, 2, 3]
+            } else {
+                Vec::new()
+            },
         };
 
-        // большая страница доходит целиком
+        // большая страница доходит целиком, миниатюра — тоже
         let a = client.upload(&page(0xFF)).await.unwrap().unwrap();
         assert_eq!((a.width, a.height, a.hash.len()), (3 * 1024 * 1024, 9, 16));
+        assert_eq!(mem.0.lock().unwrap()[&a.token].mini, vec![1, 2, 3]);
         let b = client.upload(&page(0xFF)).await.unwrap().unwrap();
         assert!(matches!(
             client.upload(&page(0)).await.unwrap(),
@@ -120,7 +143,7 @@ fn upload_claim_release_roundtrip() {
                 .unwrap(),
             Err(PageError::BadTokens(vec![a.token.clone()]))
         );
-        assert!(!mem.0.lock().unwrap()[&a.token].1);
+        assert!(!mem.0.lock().unwrap()[&a.token].done);
 
         assert_eq!(
             client
@@ -137,6 +160,6 @@ fn upload_claim_release_roundtrip() {
             Ok(())
         );
         let m = mem.0.lock().unwrap();
-        assert_eq!((m[&a.token].1, m[&b.token].2), (true, true));
+        assert_eq!((m[&a.token].done, m[&b.token].released), (true, true));
     });
 }
