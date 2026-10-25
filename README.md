@@ -83,6 +83,25 @@ client.ack(w.next_cursor).await?;          // подтвердить
 let missing = client.check_ids(&ids).await?; // кого нет на беке
 ```
 
+## Страницы глав (`capnp/pages.capnp`)
+
+`PageStore` — отдельный сервис для chapter → uploader: chapter проверяет права команды на тайтл и проксирует байты, uploader хранит.
+
+- `upload(page)` → `PageStored { status, error, token, hash(16), width, height }`; запись `pending` (без claim её удалит GC).
+- `claim(tokens, teamId)` → `pending` → `done`, все или ничего; неизвестные/чужие/не страницы → `status=1, bad=[…]`.
+- `release(tokens, teamId)` → `released` (объекты удалит GC), неизвестные пропускаются.
+- Статусы: 0 — ок, 1 — отказ по данным (HTTP 400), 2 — сбой (HTTP 500).
+
+```rust
+// uploader
+capnp_sync::pages::serve("0.0.0.0:9095", Arc::new(MyBackend) as Arc<dyn PageBackend>).await?;
+// chapter
+let c = PagesClient::connect(addr, timeout).await?;
+let page = c.upload(&PageUpload { data, user_id, team_id, title_id }).await??;
+```
+
+Методы `PageBackend` блокирующие — сервер вызывает их через `ntex::rt::spawn_blocking`. Лимит сообщения — 48 MiB.
+
 ## Тесты
 
 ```sh
