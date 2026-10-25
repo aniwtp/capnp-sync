@@ -312,6 +312,15 @@ impl PagesClient {
         })
     }
 
+    /// Залить пачку страниц одним соединением: запросы идут одновременно (uploader разбирает их в пуле потоков),
+    /// результаты — в порядке `pages`. Сбой одной не мешает остальным.
+    pub async fn upload_many(
+        &self,
+        pages: &[PageUpload],
+    ) -> Vec<Result<Result<StoredPage, PageError>, Error>> {
+        futures::future::join_all(pages.iter().map(|p| self.upload(p))).await
+    }
+
     /// Закрепить страницы за главой (`pending` → `done`).
     pub async fn claim(
         &self,

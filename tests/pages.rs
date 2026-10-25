@@ -93,6 +93,20 @@ fn upload_claim_release_roundtrip() {
             Err(PageError::Invalid(_))
         ));
 
+        // пачка: порядок результатов совпадает с порядком запроса, плохая страница не ломает остальные
+        let batch = client.upload_many(&[page(0xFF), page(0), page(0xFF)]).await;
+        assert_eq!(batch.len(), 3);
+        assert!(batch[0].as_ref().unwrap().is_ok());
+        assert!(matches!(
+            batch[1].as_ref().unwrap(),
+            Err(PageError::Invalid(_))
+        ));
+        assert!(batch[2].as_ref().unwrap().is_ok());
+        assert_ne!(
+            batch[0].as_ref().unwrap().as_ref().unwrap().token,
+            batch[2].as_ref().unwrap().as_ref().unwrap().token
+        );
+
         // чужая команда и неизвестный токен — отказ без изменений
         let err = client
             .claim(&[a.token.clone(), "nope".into()], 5)
