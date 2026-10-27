@@ -36,6 +36,10 @@ struct Title {
   typeComics @8 :UInt8;
   statusRelease @9 :UInt8;
   statusTranslate @10 :UInt8;
+  # Группа веток тайтла (0 — одиночка) и признак «не основной в группе»: финдер сворачивает выдачу
+  # до основного (самого популярного) участника группы.
+  groupId @11 :UInt64;
+  branch @12 :Bool;
 }
 
 struct User {

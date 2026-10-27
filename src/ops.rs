@@ -48,6 +48,10 @@ pub struct Title {
     pub type_comics: u8,
     pub status_release: u8,
     pub status_translate: u8,
+    /// Группа веток (0 — одиночка).
+    pub group_id: u64,
+    /// Участник группы, не основной (основной — самый популярный).
+    pub branch: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -151,6 +155,8 @@ pub fn fill_operations(builder: sync_operations::Builder<'_>, ops: &[Operation])
                 t.set_type_comics(title.type_comics);
                 t.set_status_release(title.status_release);
                 t.set_status_translate(title.status_translate);
+                t.set_group_id(title.group_id);
+                t.set_branch(title.branch);
             }
             Operation::DelTitle(id) => {
                 item.set_del_title(*id);
@@ -235,6 +241,8 @@ pub fn parse_operations(so: sync_operations::Reader<'_>) -> Result<SyncOperation
                     type_comics: v.get_type_comics(),
                     status_release: v.get_status_release(),
                     status_translate: v.get_status_translate(),
+                    group_id: v.get_group_id(),
+                    branch: v.get_branch(),
                 }));
             }
             Which::DelTitle(id) => {
