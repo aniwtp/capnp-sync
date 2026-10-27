@@ -27,6 +27,8 @@ pub struct PageUpload {
     pub web: bool,
     /// Готовая миниатюра (пусто — миниатюры нет, uploader строит сам).
     pub mini: Vec<u8>,
+    /// Глава страницы: папка `titles/{title_id}/{chapter_id}`; 0 — не задана (ответ 400).
+    pub chapter_id: u32,
 }
 
 /// Залитая страница: ключ объекта, плейсхолдер и габариты.
@@ -55,8 +57,14 @@ pub enum PageError {
 /// Хранилище страниц (uploader). Методы блокирующие — сервер зовёт их из пула потоков.
 pub trait PageBackend: Send + Sync + 'static {
     fn upload(&self, page: PageUpload) -> Result<StoredPage, PageError>;
-    /// `pending` → `done`; все или ничего.
-    fn claim(&self, tokens: &[String], team_id: u64) -> Result<(), PageError>;
+    /// `pending` → `done`; все или ничего. Токен, чья папка ≠ `titles/{title_id}/{chapter_id}`, — плохой.
+    fn claim(
+        &self,
+        tokens: &[String],
+        team_id: u64,
+        title_id: u32,
+        chapter_id: u32,
+    ) -> Result<(), PageError>;
     /// Пометить `released`; неизвестные токены пропускаются.
     fn release(&self, tokens: &[String], team_id: u64) -> Result<(), PageError>;
 }
@@ -121,6 +129,7 @@ impl page_store::Server for Handler {
             title_id: p.get_title_id(),
             web: p.get_web(),
             mini: p.get_mini()?.to_vec(),
+            chapter_id: p.get_chapter_id(),
         };
         let backend = self.0.clone();
         let res = blocking(move || backend.upload(page)).await;
@@ -154,8 +163,10 @@ impl page_store::Server for Handler {
         let p = params.get()?;
         let tokens = read_tokens(p.get_tokens()?)?;
         let team_id = p.get_team_id();
+        let title_id = p.get_title_id();
+        let chapter_id = p.get_chapter_id();
         let backend = self.0.clone();
-        let res = blocking(move || backend.claim(&tokens, team_id)).await;
+        let res = blocking(move || backend.claim(&tokens, team_id, title_id, chapter_id)).await;
         fill_result(results.get().init_result(), &res);
         Ok(())
     }
@@ -295,6 +306,7 @@ impl PagesClient {
             p.set_user_id(page.user_id);
             p.set_team_id(page.team_id);
             p.set_title_id(page.title_id);
+            p.set_chapter_id(page.chapter_id);
             p.set_web(page.web);
             p.set_mini(&page.mini);
         }
@@ -330,11 +342,15 @@ impl PagesClient {
         &self,
         tokens: &[String],
         team_id: u64,
+        title_id: u32,
+        chapter_id: u32,
     ) -> Result<Result<(), PageError>, Error> {
         let mut req = self.client.claim_request();
         {
             let mut p = req.get();
             p.set_team_id(team_id);
+            p.set_title_id(title_id);
+            p.set_chapter_id(chapter_id);
             let mut list = p.init_tokens(tokens.len() as u32);
             for (i, t) in tokens.iter().enumerate() {
                 list.set(i as u32, t.as_str());

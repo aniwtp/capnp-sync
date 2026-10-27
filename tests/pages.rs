@@ -15,6 +15,8 @@ struct Entry {
     done: bool,
     released: bool,
     mini: Vec<u8>,
+    /// Папка страницы: (title_id, chapter_id).
+    dir: (u32, u32),
 }
 
 /// token → запись
@@ -35,6 +37,7 @@ impl PageBackend for Mem {
                 done: false,
                 released: false,
                 mini: page.mini,
+                dir: (page.title_id, page.chapter_id),
             },
         );
         Ok(StoredPage {
@@ -45,11 +48,21 @@ impl PageBackend for Mem {
         })
     }
 
-    fn claim(&self, tokens: &[String], team_id: u64) -> Result<(), PageError> {
+    fn claim(
+        &self,
+        tokens: &[String],
+        team_id: u64,
+        title_id: u32,
+        chapter_id: u32,
+    ) -> Result<(), PageError> {
         let mut m = self.0.lock().unwrap();
         let bad: Vec<String> = tokens
             .iter()
-            .filter(|t| m.get(*t).is_none_or(|e| e.team != team_id || e.released))
+            .filter(|t| {
+                m.get(*t).is_none_or(|e| {
+                    e.team != team_id || e.released || e.dir != (title_id, chapter_id)
+                })
+            })
             .cloned()
             .collect();
         if !bad.is_empty() {
@@ -98,6 +111,7 @@ fn upload_claim_release_roundtrip() {
             user_id: 1,
             team_id: 5,
             title_id: 9,
+            chapter_id: 4,
             web: byte == 0xFF,
             mini: if byte == 0xFF {
                 vec![1, 2, 3]
@@ -132,13 +146,21 @@ fn upload_claim_release_roundtrip() {
 
         // чужая команда и неизвестный токен — отказ без изменений
         let err = client
-            .claim(&[a.token.clone(), "nope".into()], 5)
+            .claim(&[a.token.clone(), "nope".into()], 5, 9, 4)
             .await
             .unwrap();
         assert_eq!(err, Err(PageError::BadTokens(vec!["nope".into()])));
         assert_eq!(
             client
-                .claim(std::slice::from_ref(&a.token), 6)
+                .claim(std::slice::from_ref(&a.token), 6, 9, 4)
+                .await
+                .unwrap(),
+            Err(PageError::BadTokens(vec![a.token.clone()]))
+        );
+        // чужая папка главы — отказ
+        assert_eq!(
+            client
+                .claim(std::slice::from_ref(&a.token), 5, 9, 5)
                 .await
                 .unwrap(),
             Err(PageError::BadTokens(vec![a.token.clone()]))
@@ -147,7 +169,7 @@ fn upload_claim_release_roundtrip() {
 
         assert_eq!(
             client
-                .claim(std::slice::from_ref(&a.token), 5)
+                .claim(std::slice::from_ref(&a.token), 5, 9, 4)
                 .await
                 .unwrap(),
             Ok(())

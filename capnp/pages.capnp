@@ -10,6 +10,7 @@ struct PageUpload {
   titleId @3 :UInt32;
   web @4 :Bool;         # часть страницы вебтуна (ширина ≤ 1000, высота ≤ доли ширины), иначе страница манги (≤ 3000×4000)
   mini @5 :Data;        # готовая миниатюра от клиента (webp/jpeg/png, ≤400 по длинной стороне, кадр 2:3); пусто — миниатюры нет
+  chapterId @6 :UInt32; # глава страницы (папка `titles/{titleId}/{chapterId}`); 0 — не задана (400)
 }
 
 struct PageStored {
@@ -31,7 +32,8 @@ interface PageStore {
   # Залить страницу: запись `pending`, без claim её удалит GC.
   upload @0 (page :PageUpload) -> (result :PageStored);
   # Страницы вошли в главу: `pending` → `done`. Все или ничего: при любом плохом токене ничего не меняется.
-  claim @1 (tokens :List(Text), teamId :UInt64) -> (result :PagesResult);
+  # Токен, чья папка ≠ `titles/{titleId}/{chapterId}`, считается плохим.
+  claim @1 (tokens :List(Text), teamId :UInt64, titleId :UInt32, chapterId :UInt32) -> (result :PagesResult);
   # Страницы больше не нужны (убраны из главы или из черновика): `released`, объекты удалит GC.
   release @2 (tokens :List(Text), teamId :UInt64) -> (result :PagesResult);
 }

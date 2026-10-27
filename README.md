@@ -89,7 +89,7 @@ let missing = client.check_ids(&ids).await?; // кого нет на беке
 
 - `upload(page)` → `PageStored { status, error, token, hash(16), width, height }`; запись `pending` (без claim её удалит GC).
 - `PageUpload.mini` (`@5 :Data`) — готовая миниатюра от клиента (webp/jpeg/png, ≤400 по длинной стороне, кадр 2:3); пустое поле — миниатюры нет, uploader строит её сам из оригинала.
-- `claim(tokens, teamId)` → `pending` → `done`, все или ничего; неизвестные/чужие/не страницы → `status=1, bad=[…]`.
+- `claim(tokens, teamId, titleId, chapterId)` → `pending` → `done`, все или ничего; неизвестные/чужие/не страницы/папка ≠ `titles/{titleId}/{chapterId}` → `status=1, bad=[…]`.
 - `release(tokens, teamId)` → `released` (объекты удалит GC), неизвестные пропускаются.
 - Статусы: 0 — ок, 1 — отказ по данным (HTTP 400), 2 — сбой (HTTP 500).
 
@@ -98,7 +98,7 @@ let missing = client.check_ids(&ids).await?; // кого нет на беке
 capnp_sync::pages::serve("0.0.0.0:9095", Arc::new(MyBackend) as Arc<dyn PageBackend>).await?;
 // chapter
 let c = PagesClient::connect(addr, timeout).await?;
-let page = c.upload(&PageUpload { data, user_id, team_id, title_id, web, mini }).await??;
+let page = c.upload(&PageUpload { data, user_id, team_id, title_id, chapter_id, web, mini }).await??;
 ```
 
 Методы `PageBackend` блокирующие — сервер вызывает их через `ntex::rt::spawn_blocking`. Лимит сообщения — 48 MiB.
